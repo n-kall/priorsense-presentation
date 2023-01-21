@@ -6,7 +6,9 @@ author:
  - "Paul-Christian Bürkner"
  - "Aki Vehtari"
  - Aalto University & Cluster of Excellence SimTech, Stuttgart
-format: beamer
+format: revealjs
+type: website
+output-dir: docs
 ---
 
 # Overview
