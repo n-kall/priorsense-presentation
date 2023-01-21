@@ -7,8 +7,9 @@ author:
  - "Aki Vehtari"
  - Aalto University & Cluster of Excellence SimTech, Stuttgart
 format: revealjs
-type: website
-output-dir: docs
+project:
+  type: website
+  output-dir: docs
 ---
 
 # Overview
@@ -72,11 +73,11 @@ remotes::install_github("n-kall/priorsense")
 
 # Workflow examples
 
-Using `brms`[^1], `bayesplot`[^2] and `priorsense`
+Using `brms`, `bayesplot` and `priorsense`
 
-[^1]: https://github.com/paul-buerkner/brms
+https://github.com/paul-buerkner/brms
 
-[^2]: https://mc-stan.org/bayesplot/
+https://mc-stan.org/bayesplot/
 
 ## Plant growth: model
 
@@ -160,6 +161,7 @@ plant_ps <- priorsense::powerscale_sensitivity(
 
 plant_pseq <- powerscale_sequence(plantgrowth_fit)
 powerscale_plot_dens(plant_pseq, variables = c("b_grouptrt1"), mcse = TRUE) +
+  theme_classic() +
   theme(plot.title = element_blank(), plot.subtitle = element_blank(), text = element_text(size = 20))
 ```
 
@@ -172,6 +174,7 @@ p2 <- powerscale_plot_quantities(
   quantities = c("mean", "sd"),
   mcse = TRUE
 ) +
+  theme_classic() +
   theme(plot.title = element_blank(),
         plot.subtitle = element_blank(),
         text = element_text(size = 20))
@@ -181,7 +184,7 @@ p2
 
 ## Plant growth: Sensitivity diagnostic check
 
-```{r, eval = TRUE, echo = FALSE, results='markup'}
+```{r, eval = TRUE, echo = FALSE}
 print(priorsense::powerscale_sensitivity(plantgrowth_fit)$sensitivity, digits = 1)
 ```
 
@@ -260,6 +263,7 @@ print(powerscale_sensitivity(
 pseq <- powerscale_sequence(npk_fit)
 
 powerscale_plot_dens(pseq, variables = c("b_N1", "b_N1:P1:K1")) +
+  theme_classic() +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -273,6 +277,7 @@ powerscale_plot_dens(pseq, variables = c("b_N1", "b_N1:P1:K1")) +
 powerscale_plot_quantities(pseq, variables = c("b_N1"),
                            quantities = c("mean", "sd"),
 ) +
+  theme_classic() +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
