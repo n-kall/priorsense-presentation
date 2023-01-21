@@ -1,0 +1,356 @@
+---
+title: "Prior (and likelihood) sensitivity analysis with `priorsense`"
+author: 
+ - Noa Kallioinen
+ - "Topi Paananen"
+ - "Paul-Christian Bürkner"
+ - "Aki Vehtari"
+ - Aalto University & Cluster of Excellence SimTech, Stuttgart
+format: beamer
+---
+
+# Overview
+
+```{r, message=FALSE}
+options(digits = 1)
+
+library(priorsense)
+library(posterior)
+library(brms)
+library(ggplot2)
+library(dplyr)
+library(bayesplot)
+library(posterior)
+
+#color_scheme_set("viridis")
+bayesplot_theme_update(text = element_text(size = 20, family = "sans"))
+
+fix_size <- function(p, size = 2, linewidth = 1.5) {
+  p$layers[[1]]$aes_params$size <- size   
+  p$layers[[2]]$aes_params$size <- 1.5
+  p$layers[[3]]$aes_params$size <- size
+
+  p$layers[[1]]$aes_params$linewidth <- linewidth
+  p$layers[[2]]$aes_params$linewidth <- linewidth
+  p$layers[[3]]$aes_params$linewidth <- linewidth
+  
+  p
+}
+```
+
+-   Motivation
+-   What is `priorsense`?
+-   Workflow examples
+-   Technical details
+
+# Motivation
+
+::: incremental
+-   Choosing priors can be hard
+-   Default or template weakly-informative priors are used to save time
+-   Prior influence on posterior (in relation to likelihood) should be checked
+:::
+
+# What is `priorsense`?
+
+::: incremental
+-   R package:
+-   tools prior and likelihood sensitivity checks
+-   checks sensitivity based on "power-scaling"
+    -   changing strength of prior or likelihood
+-   visual checks and numeric diagnostic
+-   currently works with rstan, cmdstanr and brms models
+:::
+
+. . .
+
+```{r, eval=FALSE, echo=TRUE}
+remotes::install_github("n-kall/priorsense")
+```
+
+# Workflow examples
+
+Using `brms`[^1], `bayesplot`[^2] and `priorsense`
+
+[^1]: https://github.com/paul-buerkner/brms
+
+[^2]: https://mc-stan.org/bayesplot/
+
+## Plant growth: model
+
+Goal: model weight (y) of harvested plants depending on control (X = 1) vs nutrition enriching treatment (X = 1) Data: 20 observations of harvest weight (10 control, 10 treatment)
+
+```{r}
+data("PlantGrowth")
+
+pg <- tibble(PlantGrowth) |>
+  filter(group != "trt2")
+```
+
+. . .
+
+`weight ~ group, data = plantgrowth`
+
+. . .
+
+$$
+y \sim \text{normal}(\mu, \sigma) \\
+\mu = \beta_{\text{Intercept}} + \beta_{\text{grouptrt1}}X \\
+\sigma \sim p(\sigma), 
+\beta_{\text{Intercept}} \sim p(\beta_{\text{Intercept}}), 
+\beta_{\text{grouptrt1}} \sim p(\beta_{\text{grouptrt1}})
+$$
+
+## Plant growth: Choosing a prior
+
+Try a weakly informative prior $\beta_1 \sim \text{normal}(0, 2.5)$
+
+. . .
+
+```{r, message=FALSE, results='hide'}
+plantgrowth_fit_prior <- brms::brm(
+  weight ~ group,
+  data = pg,
+  prior = prior(normal(0, 2.5), class = "b"),
+  backend = "cmdstanr",
+  refresh = 0,
+  sample_prior = "only"
+  )
+
+plantgrowth_fit <- brms::brm(
+  weight ~ group,
+  data = pg,
+  prior = prior(normal(0, 2.5), class = "b"),
+  backend = "cmdstanr",
+  refresh = 0)
+```
+
+```{r, message=FALSE}
+p <- pp_check(plantgrowth_fit_prior, type = "intervals_grouped", group = "group")
+
+
+fix_size(p, linewidth = 4, size = 5)
+```
+
+## Plant growth: Fitting the model
+
+```{r, message=FALSE}
+bayesplot::mcmc_areas(plantgrowth_fit, "b_grouptrt1")
+
+```
+
+## Plant growth: Sensitivity check with priorsense
+
+|             |     |                       |                           |
+|-------------|-----|-----------------------|---------------------------|
+|             |     | Prior                 | sensitivity               |
+|             |     | No                    | Yes                       |
+| Likelihood  | No  | \-                    | Weak likelihood           |
+| sensitivity | Yes | Likelihood domination | Prior-likelihood conflict |
+
+## Plant growth: Visual sensitivity check
+
+```{r, echo = FALSE}
+
+plant_ps <- priorsense::powerscale_sensitivity(
+  plantgrowth_fit
+)
+
+plant_pseq <- powerscale_sequence(plantgrowth_fit)
+powerscale_plot_dens(plant_pseq, variables = c("b_grouptrt1"), mcse = TRUE) +
+  theme(plot.title = element_blank(), plot.subtitle = element_blank(), text = element_text(size = 20))
+```
+
+## Plant growth: Visual sensitivity check
+
+```{r}
+p2 <- powerscale_plot_quantities(
+  plant_pseq,
+  variables = c("b_grouptrt1"),
+  quantities = c("mean", "sd"),
+  mcse = TRUE
+) +
+  theme(plot.title = element_blank(),
+        plot.subtitle = element_blank(),
+        text = element_text(size = 20))
+
+p2
+```
+
+## Plant growth: Sensitivity diagnostic check
+
+```{r, eval = TRUE, echo = FALSE, results='markup'}
+print(priorsense::powerscale_sensitivity(plantgrowth_fit)$sensitivity, digits = 1)
+```
+
+## NPK: model
+
+-   Goal: Model effect of Nitrogen, Phosphate and Potassium on pea crop yield
+-   Data: 24 observations of crop yield (3 observations of each combination)
+
+`yield ~ N * P * K`
+
+$$
+y \sim \beta_{\text{Intercept}} + \beta_{\text{N1}} + \beta_{\text{P1}} + \beta_{\text{K1}} + \beta_{\text{N1:K1}} + \\ \beta_{\text{N1:P1}} + \beta_{\text{K1:P1}} + \beta_{\text{N1:P1:K1}} \\
+\sigma \sim p(\sigma), \beta_{\text{Intercept}} \sim p(\beta_{\text{Intercept}}) \\
+\beta_i \sim p(\beta_i) 
+$$
+
+```{r, echo=FALSE, eval=TRUE, message=FALSE, results='hide'}
+data(npk)
+
+npk_fit_prior <- brm(
+  yield ~ N * P * K,
+  prior = c(
+    prior(normal(0, 2.5), class = "b")
+    ),
+  data = npk,
+  backend = "cmdstanr",
+  refresh = 0,
+  sample_prior = "only"
+)
+```
+
+## NPK: Choosing a prior
+
+Try $\beta_i \sim \text{normal}(0, 2.5)$ and do prior predictive check:
+
+```{r, message=FALSE}
+
+p <- pp_check(npk_fit_prior, type = "intervals")
+
+fix_size(p, linewidth = 4, size = 5)
+```
+
+## NPK: Model fit
+
+```{r, message=FALSE, results='hide'}
+npk_fit <- brm(
+  yield ~ N * P * K,
+  prior = c(
+    prior(normal(0, 2.5), class = "b")
+    ),
+  data = npk,
+  backend = "cmdstanr",
+  refresh = 0
+)
+
+mcmc_plot(npk_fit, variable = c("b_N", "b_P", "b_K"), regex = TRUE, inner_size = 2, outer_size = 1, point_size = 5)
+
+```
+
+## NPK: Prior/likelihood sensitivity check
+
+prior sensitivity \> 0.05
+
+likelihood sensitivity \< 0.05
+
+```{r, echo=FALSE, message=FALSE}
+print(powerscale_sensitivity(
+  npk_fit,
+  prediction = function(x) draws_df(R2 = bayes_R2(x, summary = FALSE), .nchains = 4)
+)$sensitivity, digits = 1)
+```
+
+## NPK: Prior/likelihood sensitivity check
+
+```{r}
+pseq <- powerscale_sequence(npk_fit)
+
+powerscale_plot_dens(pseq, variables = c("b_N1", "b_N1:P1:K1")) +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    text = element_text(size = 20)
+  )
+```
+
+## NPK: Prior/likelihood sensitivity check
+
+```{r}
+powerscale_plot_quantities(pseq, variables = c("b_N1"),
+                           quantities = c("mean", "sd"),
+) +
+  theme(
+    plot.title = element_blank(),
+    plot.subtitle = element_blank(),
+    text = element_text(size = 20)
+  )
+```
+
+## NPK: Adjusted prior
+
+Trying a wider prior: $\beta_i \sim \text{normal}(0, 25)$
+
+```{r, message=FALSE, results='hide'}
+
+npk_fit2_prior <- brm(
+  yield ~ N * P * K,
+  prior = prior(normal(0, 25), class = "b"),
+  data = npk,
+  backend = "cmdstanr",
+  refresh = 0,
+  sample_prior = "only"
+)
+
+npk_fit2 <- brm(
+  yield ~ N * P * K,
+  prior = prior(normal(0, 25), class = "b"),
+  data = npk,
+  backend = "cmdstanr",
+  refresh = 0
+)
+
+mcmc_plot(npk_fit2, variable = c("b_N", "b_P", "b_K"),
+          regex = TRUE, inner_size = 2, outer_size = 1, point_size = 5)
+```
+
+## NPK: Adjusted prior
+
+```{r}
+powerscale_sensitivity(npk_fit2)$sensitivity
+
+```
+
+# Technical details
+
+## What's happening in the background?
+
+-   Power-scaling: $p(\theta \mid y) \propto p(\theta)^{\alpha}p(y \mid \theta)$
+-   Importance sampling to estimate resulting posterior (base posterior as proposal, modified posterior as target)
+-   Importance weights derived from prior or likelihood evaluations (specified in Stan code)
+-   Pareto-smoothed importance sampling[^3] and importance weighted moment matching improve estimations[^4]
+
+[^3]: Vehtari et al. 2022 "Pareto-smoothed importance sampling", arxiv:1507.02646
+
+[^4]: Paananen et al. 2021 "Implicitly adaptive importance sampling", Statistics and Computing
+
+## Closing remarks
+
+-   `priorsense` enables efficient and semi-automated sensitivity analysis in R
+-   Python version coming soon to ArviZ
+-   For further details see Kallioinen et al. 2022 "Detecting and diagnosing prior and likelihood sensitivity with power-scaling" `arxiv:2107.14054`
+-   **github.com/n-kall/priorsense**
+
+```{r, eval=FALSE, echo=TRUE}
+remotes::install_github("n-kall/priorsense")
+```
+
+## Appendix
+
+`priorsense` functions:
+
+-   `powerscale_sensitivity`
+-   `powerscale_sequence`
+-   `powerscale_plot_*` (`dens`, `ecdf`, `quantities`)
+
+Required Stan code
+
+```{stan, eval=FALSE, echo=TRUE, output.var='stanmodel'}
+
+generated quantities {
+  real lprior;
+  lprior = normal_lpdf(b | 0, 2.5) + normal_lpdf(sigma | 0, 10);
+}
+
+```
