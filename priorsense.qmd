@@ -63,7 +63,8 @@ set.seed(1234)
 -   R package
 -   tools for semi-automated prior and likelihood sensitivity checks
 -   checks sensitivity based on "power-scaling"
-    -   (sensitivity to varying strength of prior or likelihood)
+    - $p(\theta \mid y) \propto p(\theta)^{\alpha}p(y \mid \theta)$
+    -   (varying strength of prior or likelihood)
 -   visual checks and numerical diagnostic
 -   currently works with rstan, cmdstanr and brms models
 :::
@@ -120,9 +121,7 @@ $$
 
 ## Plant growth: Choosing a prior
 
-- Default proper priors for $\beta_{\text{Intercept}}$ and $\sigma$
-
-- Try a weakly informative prior $\beta_{\text{grouptrt1}} \sim \text{normal}(0, 2.5)$ and perform a prior-predictive check
+- Try weakly informative prior $\beta_{\text{grouptrt1}} \sim \text{normal}(0, 2.5)$ and prior-predictive check
 
 . . .
 
@@ -169,6 +168,7 @@ plant_ps <- priorsense::powerscale_sensitivity(
 plant_pseq <- powerscale_sequence(plantgrowth_fit)
 powerscale_plot_dens(plant_pseq, variables = c("b_grouptrt1"), mcse = TRUE) +
   theme_classic() +
+  guides(linetype = "none") +
   theme(plot.title = element_blank(), plot.subtitle = element_blank(), text = element_text(size = 20))
 ```
 
@@ -182,6 +182,7 @@ p2 <- powerscale_plot_quantities(
   mcse = TRUE
 ) +
   theme_classic() +
+  guides(color = "none") +
   theme(plot.title = element_blank(),
         plot.subtitle = element_blank(),
         text = element_text(size = 20),
@@ -261,10 +262,8 @@ mcmc_plot(npk_fit, variable = c("b_N", "b_P", "b_K"), regex = TRUE, inner_size =
 ## NPK: Sensitivity diagnostic
 
 ```{r, echo=FALSE, message=FALSE}
-knitr::kable(powerscale_sensitivity(
-  npk_fit,
-#  prediction = function(x) draws_df(R2 = bayes_R2(x, summary = FALSE), .nchains = 4)
-)$sensitivity, digits = 2)
+knitr::kable(powerscale_sensitivity(npk_fit, variable = c("b_N", "b_P", "b_K"), regex = TRUE)$sensitivity, digits = 2)
+
 ```
 
 ## NPK: Visual sensitivity check
@@ -274,6 +273,7 @@ pseq <- powerscale_sequence(npk_fit)
 
 powerscale_plot_dens(pseq, variables = c("b_N1", "b_N1:P1:K1")) +
   theme_classic() +
+  guides(linetype = "none") +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -286,8 +286,10 @@ powerscale_plot_dens(pseq, variables = c("b_N1", "b_N1:P1:K1")) +
 ```{r}
 powerscale_plot_quantities(pseq, variables = c("b_N1"),
                            quantities = c("mean", "sd"),
+                           mcse = TRUE
 ) +
   theme_classic() +
+  guides(color = "none") +
   theme(
     plot.title = element_blank(),
     plot.subtitle = element_blank(),
@@ -298,22 +300,24 @@ powerscale_plot_quantities(pseq, variables = c("b_N1"),
 
 ## NPK: Adjusted prior
 
-Trying a wider prior: $\beta_i \sim \text{normal}(0, 50)$
+Trying a wider prior: $\beta_i \sim \text{normal}(0, 40)$
+
+. . .
 
 ```{r, message=FALSE, results='hide'}
 
-# npk_fit2_prior <- brm(
-#   yield ~ N * P * K,
-#   prior = prior(normal(0, 50), class = "b"),
-#   data = npk,
-#   backend = "cmdstanr",
-#   refresh = 0,
-#   sample_prior = "only"
-# )
+npk_fit2_prior <- brm(
+  yield ~ N * P * K,
+  prior = prior(normal(0, 40), class = "b"),
+  data = npk,
+  backend = "cmdstanr",
+  refresh = 0,
+  sample_prior = "only"
+)
 
 npk_fit2 <- brm(
   yield ~ N * P * K,
-  prior = prior(normal(0, 50), class = "b"),
+  prior = prior(normal(0, 40), class = "b"),
   data = npk,
   backend = "cmdstanr",
   refresh = 0
@@ -326,25 +330,25 @@ mcmc_plot(npk_fit2, variable = c("b_N", "b_P", "b_K"),
 ## NPK: Adjusted prior
 
 ```{r}
-knitr::kable(powerscale_sensitivity(npk_fit2)$sensitivity, digits = 2)
-
+knitr::kable(powerscale_sensitivity(npk_fit2, variable = c("b_N", "b_P", "b_K"), regex = TRUE)$sensitivity, digits = 2)
 ```
 
-## NPK: Adjusted prior
+<!-- ## NPK: Adjusted prior -->
 
-```{r}
-pseq2 <- powerscale_sequence(npk_fit2)
+<!-- ```{r} -->
+<!-- pseq2 <- powerscale_sequence(npk_fit2) -->
 
-powerscale_plot_quantities(pseq2, quantities = c("mean", "sd"), variables = c("b_N1"),
-                           mcse = TRUE) +
-  theme_classic() +
-  theme(
-    plot.title = element_blank(),
-    plot.subtitle = element_blank(),
-    text = element_text(size = 20),
-    aspect.ratio = 1
-  )
-```
+<!-- powerscale_plot_quantities(pseq2, quantities = c("mean", "sd"), variables = c("b_N1"), -->
+<!--                            mcse = TRUE) + -->
+<!--   theme_classic() + -->
+<!--   guides(color = "none") + -->
+<!--   theme( -->
+<!--     plot.title = element_blank(), -->
+<!--     plot.subtitle = element_blank(), -->
+<!--     text = element_text(size = 20), -->
+<!--     aspect.ratio = 1 -->
+<!--   ) -->
+<!-- ``` -->
 
 # Technical details
 
@@ -352,7 +356,7 @@ powerscale_plot_quantities(pseq2, quantities = c("mean", "sd"), variables = c("b
 
 -   Power-scaling: $p(\theta \mid y) \propto p(\theta)^{\alpha}p(y \mid \theta)$
 -   Importance sampling to estimate resulting posterior (base posterior as proposal, modified posterior as target)
--   Importance weights derived from prior or likelihood evaluations (specified in Stan code)
+-   Importance weights derived from prior or likelihood evaluations
 -   Pareto-smoothed importance sampling[^3] and importance weighted moment matching improve estimations[^4]
 
 [^3]: Vehtari et al. 2022 "Pareto-smoothed importance sampling", arxiv:1507.02646

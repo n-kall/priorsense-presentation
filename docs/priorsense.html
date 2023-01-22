@@ -430,7 +430,8 @@
 <li class="fragment">tools for semi-automated prior and likelihood sensitivity checks</li>
 <li class="fragment">checks sensitivity based on “power-scaling”
 <ul>
-<li class="fragment">(sensitivity to varying strength of prior or likelihood)</li>
+<li class="fragment"><span class="math inline">\(p(\theta \mid y) \propto p(\theta)^{\alpha}p(y \mid \theta)\)</span></li>
+<li class="fragment">(varying strength of prior or likelihood)</li>
 </ul></li>
 <li class="fragment">visual checks and numerical diagnostic</li>
 <li class="fragment">currently works with rstan, cmdstanr and brms models</li>
@@ -511,8 +512,7 @@ y \sim \text{normal}(\mu, \sigma) \\
 <section id="plant-growth-choosing-a-prior" class="slide level2">
 <h2>Plant growth: Choosing a prior</h2>
 <ul>
-<li><p>Default proper priors for <span class="math inline">\(\beta_{\text{Intercept}}\)</span> and <span class="math inline">\(\sigma\)</span></p></li>
-<li><p>Try a weakly informative prior <span class="math inline">\(\beta_{\text{grouptrt1}} \sim \text{normal}(0, 2.5)\)</span> and perform a prior-predictive check</p></li>
+<li>Try weakly informative prior <span class="math inline">\(\beta_{\text{grouptrt1}} \sim \text{normal}(0, 2.5)\)</span> and prior-predictive check</li>
 </ul>
 <div class="fragment">
 <div class="cell">
@@ -619,46 +619,22 @@ y \sim \beta_{\text{Intercept}} + \beta_{\text{N1}} + \beta_{\text{P1}} + \beta_
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">b_Intercept</td>
-<td style="text-align: right;">0.05</td>
-<td style="text-align: right;">0.08</td>
-<td style="text-align: left;">prior-data conflict</td>
-</tr>
-<tr class="even">
 <td style="text-align: left;">b_N1</td>
 <td style="text-align: right;">0.16</td>
 <td style="text-align: right;">0.19</td>
 <td style="text-align: left;">prior-data conflict</td>
 </tr>
-<tr class="odd">
-<td style="text-align: left;">b_P1</td>
-<td style="text-align: right;">0.06</td>
-<td style="text-align: right;">0.05</td>
-<td style="text-align: left;">weak likelihood</td>
-</tr>
 <tr class="even">
-<td style="text-align: left;">b_K1</td>
-<td style="text-align: right;">0.08</td>
-<td style="text-align: right;">0.10</td>
-<td style="text-align: left;">prior-data conflict</td>
-</tr>
-<tr class="odd">
 <td style="text-align: left;">b_N1:P1</td>
 <td style="text-align: right;">0.07</td>
 <td style="text-align: right;">0.04</td>
 <td style="text-align: left;">weak likelihood</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td style="text-align: left;">b_N1:K1</td>
 <td style="text-align: right;">0.10</td>
 <td style="text-align: right;">0.07</td>
 <td style="text-align: left;">prior-data conflict</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">b_P1:K1</td>
-<td style="text-align: right;">0.07</td>
-<td style="text-align: right;">0.03</td>
-<td style="text-align: left;">weak likelihood</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;">b_N1:P1:K1</td>
@@ -667,10 +643,22 @@ y \sim \beta_{\text{Intercept}} + \beta_{\text{N1}} + \beta_{\text{P1}} + \beta_
 <td style="text-align: left;">weak likelihood</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">sigma</td>
-<td style="text-align: right;">0.02</td>
-<td style="text-align: right;">0.24</td>
-<td style="text-align: left;">-</td>
+<td style="text-align: left;">b_P1</td>
+<td style="text-align: right;">0.06</td>
+<td style="text-align: right;">0.05</td>
+<td style="text-align: left;">weak likelihood</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">b_P1:K1</td>
+<td style="text-align: right;">0.07</td>
+<td style="text-align: right;">0.03</td>
+<td style="text-align: left;">weak likelihood</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">b_K1</td>
+<td style="text-align: right;">0.08</td>
+<td style="text-align: right;">0.10</td>
+<td style="text-align: left;">prior-data conflict</td>
 </tr>
 </tbody>
 </table>
@@ -687,9 +675,15 @@ y \sim \beta_{\text{Intercept}} + \beta_{\text{N1}} + \beta_{\text{P1}} + \beta_
 <img data-src="priorsense_files/figure-revealjs/unnamed-chunk-15-1.png" width="960" class="r-stretch"></section>
 <section id="npk-adjusted-prior" class="slide level2">
 <h2>NPK: Adjusted prior</h2>
-<p>Trying a wider prior: <span class="math inline">\(\beta_i \sim \text{normal}(0, 50)\)</span></p>
-
-<img data-src="priorsense_files/figure-revealjs/unnamed-chunk-16-1.png" width="960" class="r-stretch"></section>
+<p>Trying a wider prior: <span class="math inline">\(\beta_i \sim \text{normal}(0, 40)\)</span></p>
+<div class="fragment">
+<div class="cell">
+<div class="cell-output-display">
+<p><img data-src="priorsense_files/figure-revealjs/unnamed-chunk-16-1.png" width="960"></p>
+</div>
+</div>
+</div>
+</section>
 <section id="npk-adjusted-prior-1" class="slide level2">
 <h2>NPK: Adjusted prior</h2>
 <div class="cell">
@@ -705,68 +699,66 @@ y \sim \beta_{\text{Intercept}} + \beta_{\text{N1}} + \beta_{\text{P1}} + \beta_
 </thead>
 <tbody>
 <tr class="odd">
-<td style="text-align: left;">b_Intercept</td>
-<td style="text-align: right;">0.01</td>
-<td style="text-align: right;">0.14</td>
-<td style="text-align: left;">-</td>
-</tr>
-<tr class="even">
 <td style="text-align: left;">b_N1</td>
 <td style="text-align: right;">0.02</td>
-<td style="text-align: right;">0.13</td>
-<td style="text-align: left;">-</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">b_P1</td>
-<td style="text-align: right;">0.01</td>
 <td style="text-align: right;">0.11</td>
 <td style="text-align: left;">-</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">b_K1</td>
-<td style="text-align: right;">0.01</td>
+<td style="text-align: left;">b_N1:P1</td>
+<td style="text-align: right;">0.03</td>
 <td style="text-align: right;">0.12</td>
 <td style="text-align: left;">-</td>
 </tr>
 <tr class="odd">
-<td style="text-align: left;">b_N1:P1</td>
+<td style="text-align: left;">b_N1:K1</td>
 <td style="text-align: right;">0.02</td>
-<td style="text-align: right;">0.12</td>
+<td style="text-align: right;">0.11</td>
 <td style="text-align: left;">-</td>
 </tr>
 <tr class="even">
-<td style="text-align: left;">b_N1:K1</td>
-<td style="text-align: right;">0.02</td>
+<td style="text-align: left;">b_N1:P1:K1</td>
+<td style="text-align: right;">0.03</td>
 <td style="text-align: right;">0.12</td>
 <td style="text-align: left;">-</td>
 </tr>
 <tr class="odd">
+<td style="text-align: left;">b_P1</td>
+<td style="text-align: right;">0.02</td>
+<td style="text-align: right;">0.13</td>
+<td style="text-align: left;">-</td>
+</tr>
+<tr class="even">
 <td style="text-align: left;">b_P1:K1</td>
 <td style="text-align: right;">0.02</td>
 <td style="text-align: right;">0.12</td>
 <td style="text-align: left;">-</td>
 </tr>
-<tr class="even">
-<td style="text-align: left;">b_N1:P1:K1</td>
+<tr class="odd">
+<td style="text-align: left;">b_K1</td>
 <td style="text-align: right;">0.02</td>
 <td style="text-align: right;">0.12</td>
-<td style="text-align: left;">-</td>
-</tr>
-<tr class="odd">
-<td style="text-align: left;">sigma</td>
-<td style="text-align: right;">0.05</td>
-<td style="text-align: right;">0.41</td>
 <td style="text-align: left;">-</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
-</section>
-<section id="npk-adjusted-prior-2" class="slide level2">
-<h2>NPK: Adjusted prior</h2>
-
-<img data-src="priorsense_files/figure-revealjs/unnamed-chunk-18-1.png" width="960" class="r-stretch"></section></section>
+<!-- ## NPK: Adjusted prior -->
+<!-- ```{r} -->
+<!-- pseq2 <- powerscale_sequence(npk_fit2) -->
+<!-- powerscale_plot_quantities(pseq2, quantities = c("mean", "sd"), variables = c("b_N1"), -->
+<!--                            mcse = TRUE) + -->
+<!--   theme_classic() + -->
+<!--   guides(color = "none") + -->
+<!--   theme( -->
+<!--     plot.title = element_blank(), -->
+<!--     plot.subtitle = element_blank(), -->
+<!--     text = element_text(size = 20), -->
+<!--     aspect.ratio = 1 -->
+<!--   ) -->
+<!-- ``` -->
+</section></section>
 <section>
 <section id="technical-details" class="title-slide slide level1 center">
 <h1>Technical details</h1>
@@ -777,7 +769,7 @@ y \sim \beta_{\text{Intercept}} + \beta_{\text{N1}} + \beta_{\text{P1}} + \beta_
 <ul>
 <li>Power-scaling: <span class="math inline">\(p(\theta \mid y) \propto p(\theta)^{\alpha}p(y \mid \theta)\)</span></li>
 <li>Importance sampling to estimate resulting posterior (base posterior as proposal, modified posterior as target)</li>
-<li>Importance weights derived from prior or likelihood evaluations (specified in Stan code)</li>
+<li>Importance weights derived from prior or likelihood evaluations</li>
 <li>Pareto-smoothed importance sampling<sup>1</sup> and importance weighted moment matching improve estimations<sup>2</sup></li>
 </ul>
 <aside><ol class="aside-footnotes"><li id="fn1" role="doc-endnote"><p>Vehtari et al.&nbsp;2022 “Pareto-smoothed importance sampling”, arxiv:1507.02646</p></li><li id="fn2" role="doc-endnote"><p>Paananen et al.&nbsp;2021 “Implicitly adaptive importance sampling”, Statistics and Computing</p></li></ol></aside></section>
@@ -802,8 +794,8 @@ y \sim \beta_{\text{Intercept}} + \beta_{\text{N1}} + \beta_{\text{P1}} + \beta_
 <h2>Closing remarks</h2>
 <ul>
 <li><code>priorsense</code> enables efficient and semi-automated sensitivity analysis in R</li>
-<li>Sensitivity is not always; think carefully when you observe sensitivity</li>
 <li>Python version coming soon to ArviZ</li>
+<li>Sensitivity is not always a problem; think carefully when you observe sensitivity</li>
 <li>For further details see Kallioinen et al.&nbsp;2022 “Detecting and diagnosing prior and likelihood sensitivity with power-scaling” <code>arxiv:2107.14054</code></li>
 <li><strong>github.com/n-kall/priorsense</strong></li>
 </ul>
