@@ -30,11 +30,11 @@ bayesplot_theme_update(text = element_text(size = 20, family = "sans"))
 fix_size <- function(p, size = 2, linewidth = 1.5) {
   p$layers[[1]]$aes_params$size <- size   
   p$layers[[2]]$aes_params$size <- 1.5
-  p$layers[[3]]$aes_params$size <- size
+  #p$layers[[3]]$aes_params$size <- size
 
   p$layers[[1]]$aes_params$linewidth <- linewidth
   p$layers[[2]]$aes_params$linewidth <- linewidth
-  p$layers[[3]]$aes_params$linewidth <- linewidth
+  #p$layers[[3]]$aes_params$linewidth <- linewidth
   
   p
 }
@@ -69,11 +69,6 @@ set.seed(1234)
 -   currently works with rstan, cmdstanr and brms models
 :::
 
-. . .
-
-```{r, eval=FALSE, echo=TRUE}
-remotes::install_github("n-kall/priorsense")
-```
 
 ## Diagnosing sensitivity with priorsense
 
@@ -144,11 +139,38 @@ plantgrowth_fit <- brms::brm(
 ```
 
 ```{r, message=FALSE}
-p <- pp_check(plantgrowth_fit_prior, type = "intervals_grouped", group = "group")
+#p <- pp_check(plantgrowth_fit_prior, type = "intervals_grouped", group = "group")
 
+p_min <- pp_check(plantgrowth_fit_prior, type = "stat", stat = "min")
+p_median <- pp_check(plantgrowth_fit_prior, type = "stat", stat = "median")
+p_max <- pp_check(plantgrowth_fit_prior, type = "stat", stat = "max")
 
-fix_size(p, linewidth = 4, size = 5)
+p_min
+
+#fix_size(p_min, linewidth = 4, size = 5)
+#fix_size(p_mean, linewidth = 4, size = 5)
+#fix_size(p_max, linewidth = 4, size = 5)
 ```
+
+## Plant growth: Choosing a prior
+
+- Try weakly informative prior $\beta_{\text{grouptrt1}} \sim \text{normal}(0, 2.5)$ and prior-predictive check
+
+
+```{r}
+p_median
+```
+
+## Plant growth: Choosing a prior
+
+- Try weakly informative prior $\beta_{\text{grouptrt1}} \sim \text{normal}(0, 2.5)$ and prior-predictive check
+
+
+```{r}
+p_max
+
+```
+
 
 ## Plant growth: Posterior
 
@@ -235,12 +257,38 @@ npk_fit_prior <- brm(
 
 Try $\beta_i \sim \text{normal}(0, 2.5)$ and perform a prior predictive check
 
+. . .
+
 ```{r, message=FALSE}
 
-p <- pp_check(npk_fit_prior, type = "intervals")
+#p <- pp_check(npk_fit_prior, type = "intervals")
+pnpk_min <- pp_check(npk_fit_prior, type = "stat", stat = "min")
+pnpk_median <- pp_check(npk_fit_prior, type = "stat", stat = "median")
+pnpk_max <- pp_check(npk_fit_prior, type = "stat", stat = "max")
 
-fix_size(p, linewidth = 4, size = 5)
+
+#fix_size(p, linewidth = 4, size = 5)
+
+pnpk_min
+
 ```
+
+## NPK: Choosing a prior
+
+Try $\beta_i \sim \text{normal}(0, 2.5)$ and perform a prior predictive check
+
+```{r}
+pnpk_median
+```
+
+## NPK: Choosing a prior
+
+Try $\beta_i \sim \text{normal}(0, 2.5)$ and perform a prior predictive check
+
+```{r}
+pnpk_max
+```
+
 
 ## NPK: Posterior
 
@@ -390,8 +438,4 @@ generated quantities {
 -   Sensitivity is not always a problem; think carefully when you observe sensitivity
 -   For further details see Kallioinen et al. 2022 "Detecting and diagnosing prior and likelihood sensitivity with power-scaling" `arxiv:2107.14054`
 -   **github.com/n-kall/priorsense**
-
-```{r, eval=FALSE, echo=TRUE}
-remotes::install_github("n-kall/priorsense")
-```
 
